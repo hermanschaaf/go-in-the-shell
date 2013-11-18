@@ -14,19 +14,26 @@ func Command(cmd string) (output *exec.Cmd) {
 	return output
 }
 
-func Run(file string) {
-	out, _ := Command(fmt.Sprintf(`go run %s`, file)).Output()
-	fmt.Println(out)
+func Run(file string) (exitStatus int) {
+	cmd := fmt.Sprintf(`go run %s`, file)
+	command := Command(cmd)
+	out, err := command.CombinedOutput()
+
+	fmt.Println(string(out))
+	if err != nil {
+		return 1
+	}
+	return 0
 }
 
-func ExecuteCommands(commands string) {
+func ExecuteCommands(commands string) (status int) {
 	filename := "test-123.go"
-	ioutil.WriteFile(filename, []byte(commands), 0x777)
-	Run(filename)
+	ioutil.WriteFile(filename, []byte(commands), os.ModeTemporary|os.ModePerm)
+	return Run(filename)
 }
 
 func main() {
-	commands := `package main;import "fmt"`
+	commands := []string{`package main`, `import "fmt"`, `func main() {`}
 
 	var cmd string
 
@@ -35,11 +42,13 @@ func main() {
 
 	for cmd != "exit" {
 		if cmd != "" {
-			ExecuteCommands(commands)
+			status := ExecuteCommands(strings.Join(commands, "\n") + "\n" + cmd + "\n}")
+			if status == 0 {
+				commands = append(commands, cmd)
+			}
 		}
 		fmt.Print(">>> ")
 		cmd, _ = reader.ReadString('\n')
 		cmd = strings.TrimSpace(cmd)
-		commands += "\n" + cmd
 	}
 }
