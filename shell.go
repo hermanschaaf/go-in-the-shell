@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+type Func struct {
+	name string
+	body []string
+}
+
 func Command(cmd string) (output *exec.Cmd) {
 	output = exec.Command("bash", "-c", cmd)
 	return output
@@ -32,8 +37,15 @@ func ExecuteCommands(commands string) (status int) {
 	return Run(filename)
 }
 
+func buildFile(packageName, imports []string, funcs []Func) {
+
+}
+
 func main() {
-	commands := []string{`package main`, `import "fmt"`, `func main() {`}
+	package_name := []string{`package main`}
+	imports := []string{`import "fmt"`}
+	funcs := []Func{}
+	commands := []string{`func main() {`}
 
 	var cmd string
 
@@ -42,6 +54,7 @@ func main() {
 
 	for cmd != "exit" {
 		if cmd != "" {
+
 			status := ExecuteCommands(strings.Join(commands, "\n") + "\n" + cmd + "\n}")
 			if status == 0 {
 				commands = append(commands, cmd)
