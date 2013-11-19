@@ -10,8 +10,8 @@ import (
 )
 
 type Func struct {
-	name string
-	body []string
+	Name string
+	Body []string
 }
 
 func Command(cmd string) (output *exec.Cmd) {
@@ -37,15 +37,22 @@ func ExecuteCommands(commands string) (status int) {
 	return Run(filename)
 }
 
-func buildFile(packageName, imports []string, funcs []Func) {
-
+func buildFile(packageName string, imports []string, funcs []Func) string {
+	var output string = packageName
+	output += strings.Join(imports, "\n")
+	for f := range funcs {
+		output += funcs[f].Name
+		output += strings.Join(funcs[f].Body)
+		output += "\n}"
+	}
+	return output
 }
 
 func main() {
-	package_name := []string{`package main`}
+	package_name := `package main`
 	imports := []string{`import "fmt"`}
-	funcs := []Func{}
-	commands := []string{`func main() {`}
+	funcs := []Func{Func(`func main() {`)}
+	commands := []string{}
 
 	var cmd string
 
@@ -54,10 +61,11 @@ func main() {
 
 	for cmd != "exit" {
 		if cmd != "" {
-
-			status := ExecuteCommands(strings.Join(commands, "\n") + "\n" + cmd + "\n}")
-			if status == 0 {
-				commands = append(commands, cmd)
+			funcs[0].Body = append(funcs[0].Body, cmd)
+			fileText := buildFile(packageName, imports, funcs)
+			status := ExecuteCommands()
+			if status != 0 {
+				funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
 			}
 		}
 		fmt.Print(">>> ")
