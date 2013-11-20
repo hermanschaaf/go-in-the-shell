@@ -50,7 +50,7 @@ func buildFile(packageName string, imports []string, funcs []Func) string {
 
 func main() {
 	package_name := `package main`
-	imports := []string{`import "fmt"`}
+	imports := []string{`import "fmt"`, `import "io/ioutil"`}
 	funcs := []Func{Func(`func main() {`)}
 	commands := []string{}
 
@@ -61,7 +61,12 @@ func main() {
 
 	for cmd != "exit" {
 		if cmd != "" {
+			if strings.Contains(cmd, ":=") {
+				varName := strings.Split(cmd, " ")[0]
+				cmd += fmt.Sprintf("\nioutil.Discard.Write([]byte(%s))", varName)
+			}
 			funcs[0].Body = append(funcs[0].Body, cmd)
+
 			fileText := buildFile(packageName, imports, funcs)
 			status := ExecuteCommands()
 			if status != 0 {
