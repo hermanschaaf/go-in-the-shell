@@ -38,21 +38,21 @@ func ExecuteCommands(commands string) (status int) {
 }
 
 func buildFile(packageName string, imports []string, funcs []Func) string {
-	var output string = packageName
-	output += strings.Join(imports, "\n")
+	var output string = packageName + "\n"
+	output += strings.Join(imports, "\n") + "\n"
 	for f := range funcs {
 		output += funcs[f].Name
-		output += strings.Join(funcs[f].Body)
+		output += strings.Join(funcs[f].Body, "\n")
 		output += "\n}"
 	}
 	return output
 }
 
 func main() {
-	package_name := `package main`
+	packageName := `package main`
 	imports := []string{`import "fmt"`, `import "io/ioutil"`}
-	funcs := []Func{Func(`func main() {`)}
-	commands := []string{}
+	funcs := []Func{Func{`func main() {`, []string{`ioutil.Discard.Write([]byte(fmt.Sprint("")))`}}}
+	// commands := []string{}
 
 	var cmd string
 
@@ -68,7 +68,7 @@ func main() {
 			funcs[0].Body = append(funcs[0].Body, cmd)
 
 			fileText := buildFile(packageName, imports, funcs)
-			status := ExecuteCommands()
+			status := ExecuteCommands(fileText)
 			if status != 0 {
 				funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
 			}
