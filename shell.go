@@ -1,17 +1,15 @@
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"fmt"
+	"github.com/nsf/termbox-go"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
-
-var K_ARROW_UP = []key{{54, 10, '('}, {55, 10, 0x2191}, {56, 10, ')'}}
-var K_ARROW_DOWN = []key{{54, 12, '('}, {55, 12, 0x2193}, {56, 12, ')'}}
 
 type Func struct {
 	Name string
@@ -66,38 +64,65 @@ func run(packageName string, imports []string, funcs []Func) (status int) {
 }
 
 func main() {
-	packageName := `package main`
-	imports := []string{`import "fmt"`, `import "io/ioutil"`}
-	funcs := []Func{Func{`func main() {`, []string{`ioutil.Discard.Write([]byte(fmt.Sprint("")))`}}}
-	// commands := []string{}
+	// packageName := `package main`
+	// imports := []string{`import "fmt"`, `import "io/ioutil"`}
+	// funcs := []Func{Func{`func main() {`, []string{`ioutil.Discard.Write([]byte(fmt.Sprint("")))`}}}
+	// // commands := []string{}
 
-	var cmd string
+	// var cmd string
 
-	fmt.Println("Go in the Shell (type `exit` to finish)")
-	reader := bufio.NewReader(os.Stdin)
+	// fmt.Println("Go in the Shell (type `exit` to finish)")
 
-	for cmd != "exit" {
-		if cmd != "" {
-			if strings.Index(strings.Trim(cmd, " "), "import") == 0 {
-				imports = append(imports, cmd)
-				status := run(packageName, imports, funcs)
-				if status != 0 {
-					imports = imports[:len(imports)-1]
-				}
-			} else {
-				if strings.Contains(cmd, ":=") {
-					varName := strings.Split(cmd, " ")[0]
-					cmd += fmt.Sprintf("\nioutil.Discard.Write([]byte(%s))", varName)
-				}
-				funcs[0].Body = append(funcs[0].Body, cmd)
-				status := run(packageName, imports, funcs)
-				if status != 0 {
-					funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
-				}
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termbox.Close()
+
+	termbox.SetInputMode(termbox.InputEsc)
+
+loop:
+	cmd := ""
+	for {
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyEsc:
+				break loop
+			case termbox.KeyArrowUp:
+				fmt.Println("hi")
+			case termbox.KeyArrowDown:
+				fmt.Println("afa")
+			default:
+				cmd += ev.Key
 			}
 		}
-		fmt.Print(">>> ")
-		cmd, _ = reader.ReadString('\n')
-		cmd = strings.TrimSpace(cmd)
+		fmt.Println(cmd)
+
 	}
+
+	// for cmd != "exit" {
+	// 	if cmd != "" {
+	// 		if strings.Index(strings.Trim(cmd, " "), "import") == 0 {
+	// 			imports = append(imports, cmd)
+	// 			status := run(packageName, imports, funcs)
+	// 			if status != 0 {
+	// 				imports = imports[:len(imports)-1]
+	// 			}
+	// 		} else {
+	// 			if strings.Contains(cmd, ":=") {
+	// 				varName := strings.Split(cmd, " ")[0]
+	// 				cmd += fmt.Sprintf("\nioutil.Discard.Write([]byte(%s))", varName)
+	// 			}
+	// 			funcs[0].Body = append(funcs[0].Body, cmd)
+	// 			status := run(packageName, imports, funcs)
+	// 			if status != 0 {
+	// 				funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
+	// 			}
+	// 		}
+	// 	}
+	// 	fmt.Print(">>> ")
+	// 	cmd, _ = reader.ReadString('\n')
+	// 	cmd = strings.TrimSpace(cmd)
+	// }
 }
