@@ -6,8 +6,12 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
+
+var K_ARROW_UP = []key{{54, 10, '('}, {55, 10, 0x2191}, {56, 10, ')'}}
+var K_ARROW_DOWN = []key{{54, 12, '('}, {55, 12, 0x2193}, {56, 12, ')'}}
 
 type Func struct {
 	Name string
@@ -34,6 +38,13 @@ func Run(file string) (exitStatus int) {
 func ExecuteCommands(commands string) (status int) {
 	filename := "test-123.go"
 	ioutil.WriteFile(filename, []byte(commands), os.ModeTemporary|os.ModePerm)
+	fmt.Println("Execing...")
+	abspath, _ := filepath.Abs(filename)
+	fmtCmd := fmt.Sprintf("goimports -w %s", abspath)
+	c := Command(fmtCmd)
+	c.Env = os.Environ()
+	c.Run()
+	fmt.Println(fmtCmd)
 	return Run(filename)
 }
 
@@ -46,6 +57,12 @@ func buildFile(packageName string, imports []string, funcs []Func) string {
 		output += "\n}"
 	}
 	return output
+}
+
+func run(packageName string, imports []string, funcs []Func) (status int) {
+	fileText := buildFile(packageName, imports, funcs)
+	status = ExecuteCommands(fileText)
+	return status
 }
 
 func main() {
@@ -61,16 +78,22 @@ func main() {
 
 	for cmd != "exit" {
 		if cmd != "" {
-			if strings.Contains(cmd, ":=") {
-				varName := strings.Split(cmd, " ")[0]
-				cmd += fmt.Sprintf("\nioutil.Discard.Write([]byte(%s))", varName)
-			}
-			funcs[0].Body = append(funcs[0].Body, cmd)
-
-			fileText := buildFile(packageName, imports, funcs)
-			status := ExecuteCommands(fileText)
-			if status != 0 {
-				funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
+			if strings.Index(strings.Trim(cmd, " "), "import") == 0 {
+				imports = append(imports, cmd)
+				status := run(packageName, imports, funcs)
+				if status != 0 {
+					imports = imports[:len(imports)-1]
+				}
+			} else {
+				if strings.Contains(cmd, ":=") {
+					varName := strings.Split(cmd, " ")[0]
+					cmd += fmt.Sprintf("\nioutil.Discard.Write([]byte(%s))", varName)
+				}
+				funcs[0].Body = append(funcs[0].Body, cmd)
+				status := run(packageName, imports, funcs)
+				if status != 0 {
+					funcs[0].Body = funcs[0].Body[:len(funcs[0].Body)-1]
+				}
 			}
 		}
 		fmt.Print(">>> ")
